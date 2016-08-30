@@ -1,71 +1,110 @@
-# Exercise - Taxonomy
+# Exercise - Configuration
 
 Technologies:
+=============
 ```
 1. JDK 1.8
-2. Scala 2.11
+2. Scala 2.11.8
 3. Sbt 0.13.8
-4. Scalatest
+4. Scalatest 3.0.0
 ```
 
 Run the test
+============
 ```
 sbt test
 ```
 
+Notes
+=====
+
+For me the resolution of the exercise can be splitted in 4 parts:
+
+**Parsing of the configuration file into a domain**
+
+I understand the file like a set of lines and I classify each line as one of the following:
+ 
+ ```
+ Group
+ Property[T]
+ Discardable
+ ```
+ 
+**Group properties of the domain**
+
+Once the file is defined as a Seq[Line] my target was to  organized the lines by Group using the following structure:
+ ```
+   private type GroupOfProperties = Map[Group, Seq[Property[_]]]
+
+ ```
+ 
+**Filtering the group of properties by environments**
+
+The idea behind of this part is to remove the properties based on the environments defined as a parameter   
+
+**Simplifying the structure**
+
+To improve the performance and the accesibility I transform from 
+```Map[Group, Seq[Property[_]]]``` to ```Map[String, Map[String, Any]]```
+
+**Accessing to the configuration through the Configuration object**
+
+The problem statement is oriented to **dynamically-typed language** like python. I have been trying to get close to that approach but I have to say that 
+I have not been 100% because scala **staticlly-typed language**
+
+I have used the trait **Dynamic** that permits:
 
 ```
-Config Challenge
-Please spend 3 hours on:
-Every large software project has its share of configuration files to control settings, execution, etc. Let’s contemplate a config file format that looks a lot like standard PHP .ini files, but with a few tweaks.
-A config file will appear as follows:
-
-[common]
-basic_size_limit = 26214400
-student_size_limit = 52428800
-paid_users_size_limit = 2147483648
-path = /srv/var/tmp/
-path<itscript> = /srv/tmp/
-
-[ftp]
-name = "hello there, ftp uploading"
-path = /tmp/
-path<production> = /srv/var/tmp/
-path<staging> = /srv/uploads/
-path<ubuntu> = /etc/var/uploads
-enabled = no
-; This is a comment
-
-[http]
-name = "http uploading"
-path = /tmp/
-path<production> = /srv/var/tmp/
-path<staging> = /srv/uploads/; This is another comment
-params = array,of,values
-
-Where "[group]" denotes the start of a group of related config options, setting = value denotes a standard setting name and associated default value, and setting<override> = value2 denotes the value for the setting if the given override is enabled. If multiple enabled overrides are defined on a setting, the one defined last will have priority.
-Assignment
-Your task is to write a Python function: def load_config(file_path, overrides=[]) that parses this format and returns an object that can be queried as follows. Note that overrides can be passed either as strings or as symbols: CONFIG = load_config("/srv/settings.conf", ["ubuntu", "production"])
-
->>> CONFIG.common.paid_users_size_limit
-# returns 2147483648
-> CONFIG.ftp.name
-# returns "hello there, ftp uploading"
->>> CONFIG.http.params
-# returns ["array", "of", "values"]
-> CONFIG.ftp.lastname
-# returns None
-> CONFIG.ftp.enabled
-# returns false (permitted bool values are "yes", "no", "true", "false", 1, 0)
-> CONFIG.ftp[‘path’] # returns "/etc/var/uploads"
-> CONFIG.ftp
-# returns a dict: # { # ‘name’ => "hello there, ftp uploading", # ‘path’ => "/etc/var/uploads", # ‘enabled’ => False # }
-
-We'll be testing using Python 2.7.10 unless you tell us otherwise; if you have any features you think are important from a later version, please let us know what to look for!
-Please submit your code as plain text (.py files). Include any tests you write or notes — we'd love to see your thought process as we review your implementation. Think of it like a code review: what context should we have to best understand your work? Make sure to remove your name or any other identifying information from files before submitting.
-Design Considerations
-load_config() will be called at boot time, and thus should be as fast as possible. Conf files can get quite lengthy - there can be an arbitrary number of groups and number of settings within each group.
-CONFIG will be queried throughout the program’s execution, so each query should be very fast as well.
-Certain queries will be made very often (thousands of times), others pretty rarely.
-If the conf file is not well-formed, it is acceptable to print an error and exit from within load_config(). Once the object is returned, however, it is not permissible to exit or crash no matter what the query is. Returning None is acceptable, however.
+ *  {{{
+ *  foo.method("blah")      ~~> foo.applyDynamic("method")("blah")
+ *  foo.method(x = "blah")  ~~> foo.applyDynamicNamed("method")(("x", "blah"))
+ *  foo.method(x = 1, 2)    ~~> foo.applyDynamicNamed("method")(("x", 1), ("", 2))
+ *  foo.field           ~~> foo.selectDynamic("field")
+ *  foo.varia = 10      ~~> foo.updateDynamic("varia")(10)
+ *  foo.arr(10) = 13    ~~> foo.selectDynamic("arr").update(10, 13)
+ *  foo.arr(10)         ~~> foo.applyDynamic("arr")(10)
 ```
+
+So I propose two possibilities:
+
+1. Access to the group i.e. CONFIG.ftp
+2. Access to the property CONFIG.ftp("name")
+
+Those methods are generic, so you can receive T which would force to do a pattern matching
+
+I would prefer something more like
+
+```val mongodbURI : String = configuration.getString(s"$env.mongodbURI").getOrElse(throw new IllegalArgumentException("mongodbURI is not defined"))```
+
+The approach that I use is https://github.com/typesafehub/config
+
+
+In terms of performance I dont think that we need a cache or similiar. The reason is because in my components I build all the singletons in the start up 
+and inject the properties needed in the constructor. Something similar to Spring with application context.
+
+Each property is read just once and assign to a variable. This variable will be the one used.
+
+```
+
+trait Environment extends RunMode{
+  info(s"loading the environment with run mode $env")
+  val mongodbURI : String = configuration.getString(s"$env.mongodbURI").getOrElse(throw new IllegalArgumentException("mongodbURI is not defined"))
+  val mongodbDatabaseName : String = configuration.getString(s"$env.mongodbDatabaseName").getOrElse(throw new IllegalArgumentException("mongodbDatabaseName is not defined"))
+  val host : String = configuration.getString(s"$env.host").getOrElse(throw new IllegalArgumentException("host is not defined"))
+  val time: Option[DateTime] =  configuration.getString(s"$env.time").map(DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss").parseDateTime(_))
+  val auth: String = configuration.getString(s"$env.auth").getOrElse(throw new IllegalArgumentException("auth service is not defined"))
+}
+
+object Environment extends Environment
+```
+
+Therefore if there is something wrong in the configuration then the start up process will raise a RuntimeException and will finish.
+
+
+Note:
+-----
+
+There is no validation and some regular expressions need to be improved
+
+ 
+ 

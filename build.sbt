@@ -1,4 +1,4 @@
-name := "config"
+name := "config-twitter"
 
 version := "1.0"
 

@@ -4,49 +4,49 @@ import org.scalatest.{MustMatchers, WordSpec}
 
 class ConfigSpec extends WordSpec with MustMatchers {
 
-  //  val config = Configuration.load_config("/exercise.conf", "ubuntu", "production")
-  //
-  //  "config.common.paid_users_size_limit" should {
-  //    "return the number 2147483648" in {
-  //      config.common("paid_users_size_limit") mustBe Some(2147483648L)
-  //    }
-  //  }
-  //
-  //  "config.ftp.name" should {
-  //    "return the string 'hello there, ftp uploading'" in {
-  //      config.ftp("name") mustBe Some("hello there, ftp uploading")
-  //    }
-  //  }
-  //
-  //  "config.http.params" should {
-  //    "return an array with the values 'array', 'of' and 'values'" in {
-  //      config.http("params") mustBe Some(Seq("array", "of", "values"))
-  //    }
-  //  }
-  //
-  //  "config.ftp.lastname" should {
-  //    "return None when there is no value define" in {
-  //      config.ftp("lastname") mustBe None
-  //    }
-  //  }
-  //
-  //  "config.ftp.enabled" should {
-  //    "return boolean false" in {
-  //      config.ftp("enabled") mustBe Some(false)
-  //    }
-  //  }
-  //
-  //  "config.ftp[‘path’]" should {
-  //    "return the string '/etc/var/uploads/'" in {
-  //      config.ftp("path") mustBe Some("/etc/var/uploads")
-  //    }
-  //  }
-  //
-  //  "config.ftp" should {
-  //    "return the map with the following values ‘name’ => 'hello there, ftp uploading', ‘path’ => '/etc/var/uploads', ‘enabled’ => False }" in {
-  //      config.ftp mustBe Some(Map("name" -> "hello there, ftp uploading", "path" -> "/etc/var/uploads", "enabled" -> false))
-  //    }
-  //  }
+    val config = Configuration.load_config("/exercise.conf", "ubuntu", "production")
+
+    "config.common.paid_users_size_limit" should {
+      "return the number 2147483648" in {
+        config.common("paid_users_size_limit") mustBe Some(2147483648L)
+      }
+    }
+
+    "config.ftp.name" should {
+      "return the string 'hello there, ftp uploading'" in {
+        config.ftp("name") mustBe Some("hello there, ftp uploading")
+      }
+    }
+
+    "config.http.params" should {
+      "return an array with the values 'array', 'of' and 'values'" in {
+        config.http("params") mustBe Some(Seq("array", "of", "values"))
+      }
+    }
+
+    "config.ftp.lastname" should {
+      "return None when there is no value define" in {
+        config.ftp("lastname") mustBe None
+      }
+    }
+
+    "config.ftp.enabled" should {
+      "return boolean false" in {
+        config.ftp("enabled") mustBe Some(false)
+      }
+    }
+
+    "config.ftp[‘path’]" should {
+      "return the string '/etc/var/uploads/'" in {
+        config.ftp("path") mustBe Some("/etc/var/uploads")
+      }
+    }
+
+    "config.ftp" should {
+      "return the map with the following values ‘name’ => 'hello there, ftp uploading', ‘path’ => '/etc/var/uploads', ‘enabled’ => False }" in {
+        config.ftp mustBe Some(Map("name" -> "hello there, ftp uploading", "path" -> "/etc/var/uploads", "enabled" -> false))
+      }
+    }
 
 
   "parseLines" should {
@@ -148,7 +148,7 @@ class ConfigSpec extends WordSpec with MustMatchers {
       )
     }
 
-    "return a map of groups for enviornments '<ubuntu>' and '<production>'" in {
+    "return a map of groups with properties for enviornments '<ubuntu>' and '<production>'" in {
       Configuration.filterByEnvironment(
         Map(
           Group("ftp") -> Seq(
